@@ -1,4 +1,4 @@
-# sirendl - A MonsterSiren song downloader
+# sirendl - A MonsterSiren music downloader
 # Copyright (C) 2026 ChinsaaWei
 # SPDX-License-Identifier: GPL-3.0-only
 #
