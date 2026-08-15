@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import random, os, strutils
+import random, os
 import cli, album_processor, album_list
 
 proc printUsage(prog: string) =
@@ -35,15 +35,7 @@ when isMainModule:
 
   if opts.list:
     try:
-      let summaries = getAlbumSummaries()
-      let count = min(summaries.len, 10)
-      echo "最新专辑列表（共 ", summaries.len, " 张，显示前 ", count, " 张）:"
-      for i in 0 ..< count:
-        var line = $(i + 1) & ". " & summaries[i].name
-        if summaries[i].artistes.len > 0:
-          line.add(" (" & summaries[i].artistes.join(", ") & ")")
-        line.add(" (ID: " & summaries[i].cid & ")")
-        echo line
+      printAlbumTable(getAlbumSummaries(), 10)
     except:
       echo "获取专辑列表失败: ", getCurrentExceptionMsg()
       quit(1)

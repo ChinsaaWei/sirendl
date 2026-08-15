@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import httpclient, json
-import types
+import httpclient, json, strutils
+import types, utils
 
 const BASE_API_URL = "https://monster-siren.hypergryph.com/api"
 
@@ -39,3 +39,16 @@ proc getAlbumSummaries*(): seq[AlbumSummary] =
     raise newException(IOError, "API返回错误: " & albumsResp.msg)
 
   return albumsResp.data
+
+proc printAlbumTable*(summaries: seq[AlbumSummary], maxCount: int) =
+  let count = min(summaries.len, maxCount)
+
+  var headers = @["序号", "ID", "专辑名称", "艺术家"]
+  var rows: seq[seq[string]]
+  for i in 0 ..< count:
+    let s = summaries[i]
+    let artist = if s.artistes.len > 0: s.artistes.join(", ") else: "-"
+    rows.add(@[$(i + 1), s.cid, s.name, artist])
+
+  echo "最新专辑列表（共 ", summaries.len, " 张，显示前 ", count, " 张）:"
+  printTable(headers, rows)
