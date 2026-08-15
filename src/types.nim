@@ -20,6 +20,17 @@ type
     msg*: string
     data*: Album
 
+  AlbumsResponse* = object
+    code*: int
+    msg*: string
+    data*: seq[AlbumSummary]
+
+  AlbumSummary* = object
+    cid*: string
+    name*: string
+    coverUrl*: string
+    artistes*: seq[string]
+
   Album* = object
     name*: string
     coverUrl*: string

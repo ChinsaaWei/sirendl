@@ -19,16 +19,20 @@ import os, strutils
 type CliResult* = object
   albumId*: string
   help*: bool
+  list*: bool
 
 proc parseCommandLine*(): CliResult =
   var albumId = ""
   var help = false
+  var list = false
   var args = commandLineParams()
   var i = 0
   while i < args.len:
     let arg = args[i]
     if arg == "-h" or arg == "--help":
       help = true
+    elif arg == "-l" or arg == "--list":
+      list = true
     elif arg.startsWith("-id="):
       albumId = arg[4..^1]
     elif arg == "-id" or arg == "-i":
@@ -39,4 +43,4 @@ proc parseCommandLine*(): CliResult =
       if albumId.len == 0:
         albumId = arg
     inc i
-  return CliResult(albumId: albumId, help: help)
+  return CliResult(albumId: albumId, help: help, list: list)
