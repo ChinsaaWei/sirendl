@@ -46,8 +46,11 @@ when isMainModule:
     quit(1)
 
   echo "开始处理专辑ID: ", opts.albumId
-  if processAlbum(opts.albumId):
+  case processAlbum(opts.albumId)
+  of aprSuccess:
     echo "\n专辑处理完成！"
-  else:
+  of aprCancelled:
+    echo "\n已取消下载"
+  of aprFailed:
     echo "\n处理失败，请检查错误信息"
     quit(1)
