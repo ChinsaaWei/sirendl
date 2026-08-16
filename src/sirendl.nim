@@ -32,7 +32,7 @@ when isMainModule:
   case opts.command
   of "list":
     try:
-      printAlbumTable(getAlbumSummaries(), 10)
+      printAlbumTable(getAlbumSummaries(), opts.listCount)
     except:
       echo "获取专辑列表失败: ", getCurrentExceptionMsg()
       quit(1)
