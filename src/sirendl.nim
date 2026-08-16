@@ -17,14 +17,6 @@
 import random, os
 import cli, album_processor, album_list
 
-proc printUsage(prog: string) =
-  echo "用法: ", prog, " -id <专辑ID>"
-  echo "示例: ", prog, " -id 9375"
-  echo "也支持: ", prog, " -i 9375"
-  echo "或者: ", prog, " 9375"
-  echo "列出专辑: ", prog, " -l"
-  echo "或者: ", prog, " --list"
-
 when isMainModule:
   randomize()
   let opts = parseCommandLine()
@@ -33,24 +25,25 @@ when isMainModule:
     printUsage(getAppFilename().extractFilename)
     quit(0)
 
-  if opts.list:
+  if opts.errorMsg.len > 0:
+    printCliError(opts, getAppFilename().extractFilename)
+    quit(1)
+
+  case opts.command
+  of "list":
     try:
       printAlbumTable(getAlbumSummaries(), 10)
     except:
       echo "获取专辑列表失败: ", getCurrentExceptionMsg()
       quit(1)
     quit(0)
-
-  if opts.albumId.len == 0:
-    printUsage(getAppFilename().extractFilename)
-    quit(1)
-
-  echo "开始处理专辑ID: ", opts.albumId
-  case processAlbum(opts.albumId)
-  of aprSuccess:
-    echo "\n专辑处理完成！"
-  of aprCancelled:
-    echo "\n已取消下载"
-  of aprFailed:
-    echo "\n处理失败，请检查错误信息"
-    quit(1)
+  of "download":
+    echo "开始处理专辑ID: ", opts.albumId
+    case processAlbum(opts.albumId)
+    of aprSuccess:
+      echo "\n专辑处理完成！"
+    of aprCancelled:
+      echo "\n已取消下载"
+    of aprFailed:
+      echo "\n处理失败，请检查错误信息"
+      quit(1)
