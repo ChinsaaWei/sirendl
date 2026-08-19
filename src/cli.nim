@@ -19,6 +19,7 @@ import os, strutils
 type CliResult* = object
   command*: string
   albumId*: string
+  searchKeyword*: string
   listCount*: int
   help*: bool
   errorMsg*: string
@@ -26,6 +27,7 @@ type CliResult* = object
 proc parseCommandLine*(): CliResult =
   var command = ""
   var albumId = ""
+  var searchKeyword = ""
   var listCount = 10
   var countErr = ""
   var help = false
@@ -33,10 +35,12 @@ proc parseCommandLine*(): CliResult =
   for arg in commandLineParams():
     if arg == "-h" or arg == "--help":
       help = true
-    elif command.len == 0 and (arg == "download" or arg == "list"):
+    elif command.len == 0 and (arg == "download" or arg == "list" or arg == "search"):
       command = arg
     elif command == "download" and albumId.len == 0:
       albumId = arg
+    elif command == "search" and searchKeyword.len == 0:
+      searchKeyword = arg
     elif command == "list" and not hasCount:
       hasCount = true
       if arg.len > 0 and arg.allCharsInSet(Digits):
@@ -50,6 +54,9 @@ proc parseCommandLine*(): CliResult =
     of "download":
       if albumId.len == 0:
         errorMsg = "download 命令需要一个专辑ID"
+    of "search":
+      if searchKeyword.len == 0:
+        errorMsg = "search 命令需要一个搜索关键词"
     of "list":
       if countErr.len > 0:
         errorMsg = countErr
@@ -58,7 +65,8 @@ proc parseCommandLine*(): CliResult =
     else:
       discard
 
-  return CliResult(command: command, albumId: albumId, listCount: listCount, help: help, errorMsg: errorMsg)
+  return CliResult(command: command, albumId: albumId, searchKeyword: searchKeyword,
+                   listCount: listCount, help: help, errorMsg: errorMsg)
 
 proc printUsage*(prog: string) =
   echo "用法: ", prog, " <命令> [参数]"
@@ -66,11 +74,13 @@ proc printUsage*(prog: string) =
   echo "命令:"
   echo "  download <专辑ID>  下载指定专辑"
   echo "  list [数量]        列出专辑，默认 10 张"
+  echo "  search <关键词>    模糊搜索专辑（仅匹配专辑名）"
   echo "  -h, --help         显示帮助"
   echo ""
   echo "示例: ", prog, " download 9375"
   echo "      ", prog, " list"
   echo "      ", prog, " list 15"
+  echo "      ", prog, " search 音律"
 
 proc printCliError*(opts: CliResult, prog: string) =
   if opts.errorMsg.len == 0:

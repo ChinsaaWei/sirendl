@@ -37,6 +37,13 @@ when isMainModule:
       echo "获取专辑列表失败: ", getCurrentExceptionMsg()
       quit(1)
     quit(0)
+  of "search":
+    try:
+      printSearchResults(searchAlbumSummaries(getAlbumSummaries(), opts.searchKeyword), opts.searchKeyword)
+    except:
+      echo "搜索失败: ", getCurrentExceptionMsg()
+      quit(1)
+    quit(0)
   of "download":
     echo "开始处理专辑ID: ", opts.albumId
     case processAlbum(opts.albumId)
