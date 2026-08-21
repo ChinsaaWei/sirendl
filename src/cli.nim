@@ -18,7 +18,7 @@ import os, strutils
 
 type CliResult* = object
   command*: string
-  albumId*: string
+  albumIds*: seq[string]
   searchKeyword*: string
   listCount*: int
   help*: bool
@@ -26,7 +26,7 @@ type CliResult* = object
 
 proc parseCommandLine*(): CliResult =
   var command = ""
-  var albumId = ""
+  var albumIds: seq[string]
   var searchKeyword = ""
   var listCount = 10
   var countErr = ""
@@ -37,8 +37,8 @@ proc parseCommandLine*(): CliResult =
       help = true
     elif command.len == 0 and (arg == "download" or arg == "list" or arg == "search"):
       command = arg
-    elif command == "download" and albumId.len == 0:
-      albumId = arg
+    elif command == "download":
+      albumIds.add(arg)
     elif command == "search" and searchKeyword.len == 0:
       searchKeyword = arg
     elif command == "list" and not hasCount:
@@ -52,8 +52,8 @@ proc parseCommandLine*(): CliResult =
   if not help:
     case command
     of "download":
-      if albumId.len == 0:
-        errorMsg = "download 命令需要一个专辑ID"
+      if albumIds.len == 0:
+        errorMsg = "download 命令需要一个或多个专辑ID"
     of "search":
       if searchKeyword.len == 0:
         errorMsg = "search 命令需要一个搜索关键词"
@@ -65,14 +65,14 @@ proc parseCommandLine*(): CliResult =
     else:
       discard
 
-  return CliResult(command: command, albumId: albumId, searchKeyword: searchKeyword,
+  return CliResult(command: command, albumIds: albumIds, searchKeyword: searchKeyword,
                    listCount: listCount, help: help, errorMsg: errorMsg)
 
 proc printUsage*(prog: string) =
   echo "用法: ", prog, " <命令> [参数]"
   echo ""
   echo "命令:"
-  echo "  download <专辑ID>  下载指定专辑"
+  echo "  download <专辑ID> [专辑ID...]  下载指定专辑，可一次下载多张（按顺序）"
   echo "  list [数量]        列出专辑，默认 10 张"
   echo "  search <关键词>    模糊搜索专辑（仅匹配专辑名）"
   echo "  -h, --help         显示帮助"
@@ -88,7 +88,7 @@ proc printCliError*(opts: CliResult, prog: string) =
   case opts.command
   of "download":
     echo "错误: ", opts.errorMsg
-    echo "用法: ", prog, " download <专辑ID>"
+    echo "用法: ", prog, " download <专辑ID> [专辑ID...]"
   else:
     echo "错误: ", opts.errorMsg
     printUsage(prog)

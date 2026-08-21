@@ -23,13 +23,19 @@ type
   AlbumProcessResult* = enum
     aprSuccess, aprFailed, aprCancelled
 
-  SongInfo = object
-    name: string
-    cid: string
-    sourceUrl: string
-    ext: string
-    size: int64
-    errorMsg: string
+  SongInfo* = object
+    name*: string
+    cid*: string
+    sourceUrl*: string
+    ext*: string
+    size*: int64
+    errorMsg*: string
+
+  AlbumDownloadInfo* = object
+    albumId*: string
+    albumName*: string
+    coverUrl*: string
+    songs*: seq[SongInfo]
 
 proc getFileSize(client: HttpClient, url: string): int64 =
   try:
@@ -52,7 +58,7 @@ proc formatSize(bytes: int64): string =
     return formatFloat(bytes / 1024, ffDecimal, 1) & " KB"
   return $bytes & " B"
 
-proc processAlbum*(albumId: string): AlbumProcessResult =
+proc fetchAlbum*(albumId: string): AlbumDownloadInfo =
   let client = newHttpClient(timeout = 30_000)
   client.headers = newHttpHeaders({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
@@ -61,31 +67,24 @@ proc processAlbum*(albumId: string): AlbumProcessResult =
   let albumUrl = BASE_API_URL & "/album/" & albumId & "/detail"
   var resp = client.get(albumUrl)
   if resp.code != Http200:
-    echo "获取专辑详情失败: ", resp.status
-    return aprFailed
+    raise newException(IOError, "获取专辑详情失败: " & resp.status)
 
   var albumResp: AlbumResponse
   try:
     albumResp = resp.body.parseJson().to(AlbumResponse)
   except:
-    echo "解析专辑数据失败: ", getCurrentExceptionMsg()
-    return aprFailed
+    raise newException(ValueError, "解析专辑数据失败: " & getCurrentExceptionMsg())
 
   if albumResp.code != 0:
-    echo "API返回错误: ", albumResp.msg
-    return aprFailed
+    raise newException(IOError, "API返回错误: " & albumResp.msg)
 
   let albumData = albumResp.data
   var albumName = sanitizeFilename(albumData.name)
   if albumName.len == 0: albumName = "未知专辑"
-  echo "处理专辑: ", albumName
 
-  let songs = albumData.songs
-  echo "找到 ", songs.len, " 首歌曲"
   echo "正在获取歌曲信息..."
-
   var songInfos: seq[SongInfo]
-  for song in songs:
+  for song in albumData.songs:
     let songName = sanitizeFilename(song.name)
     let finalName = if songName.len > 0: songName else: "未知歌曲"
 
@@ -119,27 +118,24 @@ proc processAlbum*(albumId: string): AlbumProcessResult =
                            sourceUrl: sourceUrl, ext: getFileExtension(sourceUrl),
                            size: getFileSize(client, sourceUrl)))
 
-  let downloadableCount = songInfos.countIt(it.sourceUrl.len > 0)
-  if downloadableCount == 0:
-    echo "没有可下载的歌曲"
-    return aprFailed
+  return AlbumDownloadInfo(albumId: albumId, albumName: albumName,
+                           coverUrl: albumData.coverUrl, songs: songInfos)
 
+proc printAlbumSummary*(album: AlbumDownloadInfo) =
   var headers = @["序号", "歌曲名称", "文件格式", "WAV大小"]
   var rows: seq[seq[string]]
-  for i, info in songInfos:
+  for i, info in album.songs:
     let ext = if info.ext.len > 0: info.ext else: "-"
     rows.add(@[$(i + 1), info.name, ext, formatSize(info.size)])
-  echo "\n专辑歌曲列表（共 ", songs.len, " 首）:"
+  echo "\n专辑 [", album.albumName, "] 歌曲列表（共 ", album.songs.len, " 首）:"
   printTable(headers, rows)
 
-  stdout.write("是否开始下载以上 ", downloadableCount, " 首歌曲? [Y/n]: ")
-  var answer = ""
-  try:
-    answer = readLine(stdin).strip().toLowerAscii()
-  except EOFError:
-    answer = "n"
-  if answer.len > 0 and answer[0] == 'n':
-    return aprCancelled
+proc processAlbum*(album: AlbumDownloadInfo): AlbumProcessResult =
+  let albumName = album.albumName
+  let downloadableCount = album.songs.countIt(it.sourceUrl.len > 0)
+  if downloadableCount == 0:
+    echo "[", albumName, "] 没有可下载的歌曲"
+    return aprFailed
 
   let baseDir = getHomeDir() / "Data" / "MonsterSiren"
   let albumDir = baseDir / albumName
@@ -148,15 +144,15 @@ proc processAlbum*(albumId: string): AlbumProcessResult =
   createDir(albumDir); createDir(wavDir); createDir(flacDir)
   echo "创建专辑文件夹: ", albumDir
 
-  if albumData.coverUrl.len > 0:
-    let coverExt = getFileExtension(albumData.coverUrl)
+  if album.coverUrl.len > 0:
+    let coverExt = getFileExtension(album.coverUrl)
     let coverPath = albumDir / ("cover" & coverExt)
-    if downloadFile(albumData.coverUrl, coverPath):
+    if downloadFile(album.coverUrl, coverPath):
       echo "封面下载成功: ", coverPath
     else:
       echo "封面下载失败"
 
-  for info in songInfos:
+  for info in album.songs:
     if info.sourceUrl.len == 0:
       echo "跳过 ", info.name, ": ", info.errorMsg
       continue
@@ -203,3 +199,50 @@ proc processAlbum*(albumId: string): AlbumProcessResult =
 
   echo "WAV到FLAC转换完成！"
   return aprSuccess
+
+proc runDownload*(albumIds: seq[string]): int =
+  var albums: seq[AlbumDownloadInfo]
+  var fetchFailed = false
+  for i, albumId in albumIds:
+    if albumIds.len > 1:
+      echo "\n=== [", i + 1, "/", albumIds.len, "] 获取专辑ID: ", albumId, " ==="
+    try:
+      albums.add(fetchAlbum(albumId))
+    except:
+      echo "获取专辑 ", albumId, " 失败: ", getCurrentExceptionMsg()
+      fetchFailed = true
+
+  if albums.len == 0:
+    echo "\n没有可处理的专辑"
+    return 1
+
+  let totalSongs = albums.mapIt(it.songs.countIt(it.sourceUrl.len > 0)).foldl(a + b)
+  echo "\n共获取到 ", albums.len, " 张专辑，", totalSongs, " 首可下载歌曲："
+  for album in albums:
+    printAlbumSummary(album)
+
+  stdout.write("是否开始按顺序下载以上 ", albums.len, " 张专辑共 ", totalSongs, " 首歌曲? [Y/n]: ")
+  var answer = ""
+  try:
+    answer = readLine(stdin).strip().toLowerAscii()
+  except EOFError:
+    answer = "n"
+  if answer.len > 0 and answer[0] == 'n':
+    echo "已取消下载"
+    return 0
+
+  var failed = fetchFailed
+  for i, album in albums:
+    if albums.len > 1:
+      echo "\n=== [", i + 1, "/", albums.len, "] 处理专辑: ", album.albumName, " ==="
+    case processAlbum(album)
+    of aprSuccess:
+      echo "\n专辑处理完成！"
+    of aprCancelled:
+      echo "\n已取消下载"
+    of aprFailed:
+      echo "\n处理失败，请检查错误信息"
+      failed = true
+  if failed:
+    return 1
+  return 0
