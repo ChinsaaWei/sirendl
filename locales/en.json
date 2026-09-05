@@ -1,0 +1,86 @@
+{
+  "error": {
+    "http_failed": "HTTP request failed: ",
+    "download_failed": "Download failed: ",
+    "fetch_list_failed": "Failed to fetch album list: ",
+    "parse_list_failed": "Failed to parse album list data: ",
+    "api_error": "API returned an error: ",
+    "fetch_album_failed": "Failed to fetch album details: ",
+    "parse_album_failed": "Failed to parse album data: ",
+    "search_failed": "Search failed: ",
+    "song_http_failed": "fetch failed (HTTP $1)",
+    "song_parse_failed": "failed to parse data",
+    "song_no_link": "no download link",
+    "unknown_command": "unknown command",
+    "list_count_invalid": "the list command requires a valid count",
+    "download_requires_id": "the download command requires one or more album IDs",
+    "search_requires_keyword": "the search command requires a search keyword",
+    "prefix": "Error: ",
+    "fetch_album_run": "Failed to fetch album $1: $2",
+    "no_albums": "\nNo albums to process",
+    "process_failed": "\nProcessing failed, please check the error messages"
+  },
+  "usage": {
+    "title": "Usage: $1 <command> [args]",
+    "commands": "Commands:",
+    "download_line": "  download <albumID> [albumID...]  Download the given album(s), multiple at once (in order)",
+    "list_line": "  list [count]         List albums, 10 by default",
+    "search_line": "  search <keyword>     Fuzzy-search albums (album name only)",
+    "help_line": "  -h, --help           Show help",
+    "examples": "Examples:",
+    "example_download": "          $1 download 9375",
+    "example_list": "          $1 list",
+    "example_list15": "          $1 list 15",
+    "example_search": "          $1 search 音律",
+    "download_inline": "Usage: $1 download <albumID> [albumID...]"
+  },
+  "table": {
+    "col_no": "No.",
+    "col_id": "ID",
+    "col_album": "Album",
+    "col_artist": "Artist",
+    "col_track": "Track",
+    "col_format": "Format",
+    "col_wav_size": "WAV size"
+  },
+  "list": {
+    "summary": "Latest albums ($1 total, showing first $2):"
+  },
+  "search": {
+    "none": "No albums found matching \"$1\"",
+    "summary": "Found $2 album(s) matching \"$1\":"
+  },
+  "album": {
+    "summary": "\nAlbum [$1] tracks ($2 total):",
+    "no_downloadable": "[$1] has no downloadable tracks"
+  },
+  "misc": {
+    "unknown_album": "Unknown Album",
+    "unknown_track": "Unknown Track"
+  },
+  "status": {
+    "fetch_tracks": "Fetching track info...",
+    "creating_folder": "Creating album folder: ",
+    "cover_downloaded": "Cover downloaded: ",
+    "cover_failed": "Cover download failed",
+    "skipping": "Skipping $1: $2",
+    "track_downloaded": "Downloaded to wav folder: $1",
+    "track_failed": "Download failed: $1",
+    "converting": "Converting WAV files to FLAC...",
+    "converted": "Converted: $1 -> $2",
+    "convert_failed": "Conversion failed: $1 (exit code: $2)",
+    "convert_output": "Error output: ",
+    "conversion_done": "WAV to FLAC conversion complete!",
+    "cancelled": "Download cancelled",
+    "cancelled_nl": "\nDownload cancelled",
+    "album_done": "\nAlbum processed!"
+  },
+  "progress": {
+    "fetch_album": "\n=== [$1/$2] Fetching album ID: $3 ===",
+    "summary_overview": "\nFetched $1 album(s) with $2 downloadable track(s):",
+    "processing_album": "\n=== [$1/$2] Processing album: $3 ==="
+  },
+  "prompt": {
+    "confirm": "Download the above $1 album(s) with $2 track(s) in order? [Y/n]: "
+  }
+}

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import httpclient, streams, strutils
+import httpclient, streams, strutils, i18n
 
 const DEFAULT_USER_AGENT* = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0"
 
@@ -26,7 +26,7 @@ proc downloadFile*(url: string, savePath: string, timeout = 30_000): bool =
   try:
     let resp = client.get(url)
     if resp.code != Http200:
-      echo "HTTP请求失败: ", resp.status
+      echo t("error.http_failed"), resp.status
       return false
     var file = open(savePath, fmWrite)
     defer: file.close()
@@ -37,5 +37,5 @@ proc downloadFile*(url: string, savePath: string, timeout = 30_000): bool =
       discard file.writeBytes(buffer, 0, n)
     return true
   except:
-    echo "下载失败: ", getCurrentExceptionMsg()
+    echo t("error.download_failed"), getCurrentExceptionMsg()
     return false

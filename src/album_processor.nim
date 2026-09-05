@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import httpclient, json, os, osproc, strutils, random, sequtils
-import types, downloader, utils
+import types, downloader, utils, i18n
 
 const BASE_API_URL* = "https://monster-siren.hypergryph.com/api"
 
@@ -67,32 +67,32 @@ proc fetchAlbum*(albumId: string): AlbumDownloadInfo =
   let albumUrl = BASE_API_URL & "/album/" & albumId & "/detail"
   var resp = client.get(albumUrl)
   if resp.code != Http200:
-    raise newException(IOError, "获取专辑详情失败: " & resp.status)
+    raise newException(IOError, t("error.fetch_album_failed") & resp.status)
 
   var albumResp: AlbumResponse
   try:
     albumResp = resp.body.parseJson().to(AlbumResponse)
   except:
-    raise newException(ValueError, "解析专辑数据失败: " & getCurrentExceptionMsg())
+    raise newException(ValueError, t("error.parse_album_failed") & getCurrentExceptionMsg())
 
   if albumResp.code != 0:
-    raise newException(IOError, "API返回错误: " & albumResp.msg)
+    raise newException(IOError, t("error.api_error") & albumResp.msg)
 
   let albumData = albumResp.data
   var albumName = sanitizeFilename(albumData.name)
-  if albumName.len == 0: albumName = "未知专辑"
+  if albumName.len == 0: albumName = t("misc.unknown_album")
 
-  echo "正在获取歌曲信息..."
+  echo t("status.fetch_tracks")
   var songInfos: seq[SongInfo]
   for song in albumData.songs:
     let songName = sanitizeFilename(song.name)
-    let finalName = if songName.len > 0: songName else: "未知歌曲"
+    let finalName = if songName.len > 0: songName else: t("misc.unknown_track")
 
     let songUrl = BASE_API_URL & "/song/" & song.cid
     resp = client.get(songUrl)
     if resp.code != Http200:
       songInfos.add(SongInfo(name: finalName, cid: song.cid,
-                             errorMsg: "获取失败 (HTTP " & resp.status & ")"))
+                             errorMsg: t("error.song_http_failed") % [resp.status]))
       continue
 
     var songResp: SongResponse
@@ -100,7 +100,7 @@ proc fetchAlbum*(albumId: string): AlbumDownloadInfo =
       songResp = resp.body.parseJson().to(SongResponse)
     except:
       songInfos.add(SongInfo(name: finalName, cid: song.cid,
-                             errorMsg: "解析数据失败"))
+                             errorMsg: t("error.song_parse_failed")))
       continue
 
     if songResp.code != 0:
@@ -111,7 +111,7 @@ proc fetchAlbum*(albumId: string): AlbumDownloadInfo =
     let sourceUrl = songResp.data.sourceUrl
     if sourceUrl.len == 0:
       songInfos.add(SongInfo(name: finalName, cid: song.cid,
-                             errorMsg: "无下载链接"))
+                             errorMsg: t("error.song_no_link")))
       continue
 
     songInfos.add(SongInfo(name: finalName, cid: song.cid,
@@ -122,19 +122,19 @@ proc fetchAlbum*(albumId: string): AlbumDownloadInfo =
                            coverUrl: albumData.coverUrl, songs: songInfos)
 
 proc printAlbumSummary*(album: AlbumDownloadInfo) =
-  var headers = @["序号", "歌曲名称", "文件格式", "WAV大小"]
+  var headers = @[t("table.col_no"), t("table.col_track"), t("table.col_format"), t("table.col_wav_size")]
   var rows: seq[seq[string]]
   for i, info in album.songs:
     let ext = if info.ext.len > 0: info.ext else: "-"
     rows.add(@[$(i + 1), info.name, ext, formatSize(info.size)])
-  echo "\n专辑 [", album.albumName, "] 歌曲列表（共 ", album.songs.len, " 首）:"
+  echo t("album.summary") % [album.albumName, $(album.songs.len)]
   printTable(headers, rows)
 
 proc processAlbum*(album: AlbumDownloadInfo): AlbumProcessResult =
   let albumName = album.albumName
   let downloadableCount = album.songs.countIt(it.sourceUrl.len > 0)
   if downloadableCount == 0:
-    echo "[", albumName, "] 没有可下载的歌曲"
+    echo t("album.no_downloadable") % [albumName]
     return aprFailed
 
   let baseDir = getHomeDir() / "Data" / "MonsterSiren"
@@ -142,29 +142,29 @@ proc processAlbum*(album: AlbumDownloadInfo): AlbumProcessResult =
   let wavDir = albumDir / "wav"
   let flacDir = albumDir / "flac"
   createDir(albumDir); createDir(wavDir); createDir(flacDir)
-  echo "创建专辑文件夹: ", albumDir
+  echo t("status.creating_folder"), albumDir
 
   if album.coverUrl.len > 0:
     let coverExt = getFileExtension(album.coverUrl)
     let coverPath = albumDir / ("cover" & coverExt)
     if downloadFile(album.coverUrl, coverPath):
-      echo "封面下载成功: ", coverPath
+      echo t("status.cover_downloaded"), coverPath
     else:
-      echo "封面下载失败"
+      echo t("status.cover_failed")
 
   for info in album.songs:
     if info.sourceUrl.len == 0:
-      echo "跳过 ", info.name, ": ", info.errorMsg
+      echo t("status.skipping") % [info.name, info.errorMsg]
       continue
     let songPath = wavDir / (info.name & info.ext)
     if downloadFile(info.sourceUrl, songPath):
-      echo "下载成功到wav文件夹: ", info.name, info.ext
+      echo t("status.track_downloaded") % [info.name & info.ext]
     else:
-      echo "下载失败: ", info.name
+      echo t("status.track_failed") % [info.name]
 
     sleep(rand(400) + 100)
 
-  echo "开始转换WAV文件到FLAC格式..."
+  echo t("status.converting")
   var coverPath = albumDir / "cover.jpg"
   if not fileExists(coverPath):
     for f in walkFiles(albumDir / "cover.*"):
@@ -191,13 +191,13 @@ proc processAlbum*(album: AlbumDownloadInfo): AlbumProcessResult =
     let (output, exitCode) = execCmdEx(cmd)
 
     if exitCode == 0:
-      echo "转换成功: ", extractFilename(wavFile), " -> ", extractFilename(flacFile)
+      echo t("status.converted") % [extractFilename(wavFile), extractFilename(flacFile)]
     else:
-      echo "转换失败: ", extractFilename(wavFile), " (返回码: ", exitCode, ")"
+      echo t("status.convert_failed") % [extractFilename(wavFile), $exitCode]
       if output.len > 0:
-        echo "错误信息: ", output
+        echo t("status.convert_output"), output
 
-  echo "WAV到FLAC转换完成！"
+  echo t("status.conversion_done")
   return aprSuccess
 
 proc runDownload*(albumIds: seq[string]): int =
@@ -205,43 +205,43 @@ proc runDownload*(albumIds: seq[string]): int =
   var fetchFailed = false
   for i, albumId in albumIds:
     if albumIds.len > 1:
-      echo "\n=== [", i + 1, "/", albumIds.len, "] 获取专辑ID: ", albumId, " ==="
+      echo t("progress.fetch_album") % [$(i + 1), $(albumIds.len), albumId]
     try:
       albums.add(fetchAlbum(albumId))
     except:
-      echo "获取专辑 ", albumId, " 失败: ", getCurrentExceptionMsg()
+      echo t("error.fetch_album_run") % [albumId, getCurrentExceptionMsg()]
       fetchFailed = true
 
   if albums.len == 0:
-    echo "\n没有可处理的专辑"
+    echo t("error.no_albums")
     return 1
 
   let totalSongs = albums.mapIt(it.songs.countIt(it.sourceUrl.len > 0)).foldl(a + b)
-  echo "\n共获取到 ", albums.len, " 张专辑，", totalSongs, " 首可下载歌曲："
+  echo t("progress.summary_overview") % [$(albums.len), $(totalSongs)]
   for album in albums:
     printAlbumSummary(album)
 
-  stdout.write("是否开始按顺序下载以上 ", albums.len, " 张专辑共 ", totalSongs, " 首歌曲? [Y/n]: ")
+  stdout.write(t("prompt.confirm") % [$(albums.len), $(totalSongs)])
   var answer = ""
   try:
     answer = readLine(stdin).strip().toLowerAscii()
   except EOFError:
     answer = "n"
   if answer.len > 0 and answer[0] == 'n':
-    echo "已取消下载"
+    echo t("status.cancelled")
     return 0
 
   var failed = fetchFailed
   for i, album in albums:
     if albums.len > 1:
-      echo "\n=== [", i + 1, "/", albums.len, "] 处理专辑: ", album.albumName, " ==="
+      echo t("progress.processing_album") % [$(i + 1), $(albums.len), album.albumName]
     case processAlbum(album)
     of aprSuccess:
-      echo "\n专辑处理完成！"
+      echo t("status.album_done")
     of aprCancelled:
-      echo "\n已取消下载"
+      echo t("status.cancelled_nl")
     of aprFailed:
-      echo "\n处理失败，请检查错误信息"
+      echo t("error.process_failed")
       failed = true
   if failed:
     return 1

@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import random, os
-import cli, album_processor, album_list
+import cli, album_processor, album_list, i18n
 
 when isMainModule:
   randomize()
+  initI18n()
   let opts = parseCommandLine()
 
   if opts.help:
@@ -34,14 +35,14 @@ when isMainModule:
     try:
       printAlbumTable(getAlbumSummaries(), opts.listCount)
     except:
-      echo "获取专辑列表失败: ", getCurrentExceptionMsg()
+      echo t("error.fetch_list_failed"), getCurrentExceptionMsg()
       quit(1)
     quit(0)
   of "search":
     try:
       printSearchResults(searchAlbumSummaries(getAlbumSummaries(), opts.searchKeyword), opts.searchKeyword)
     except:
-      echo "搜索失败: ", getCurrentExceptionMsg()
+      echo t("error.search_failed"), getCurrentExceptionMsg()
       quit(1)
     quit(0)
   of "download":

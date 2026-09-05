@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os, strutils
+import os, strutils, i18n
 
 type CliResult* = object
   command*: string
@@ -46,22 +46,22 @@ proc parseCommandLine*(): CliResult =
       if arg.len > 0 and arg.allCharsInSet(Digits):
         listCount = parseInt(arg)
       else:
-        countErr = "list 命令需要一个有效的数量"
+        countErr = t("error.list_count_invalid")
 
   var errorMsg = ""
   if not help:
     case command
     of "download":
       if albumIds.len == 0:
-        errorMsg = "download 命令需要一个或多个专辑ID"
+        errorMsg = t("error.download_requires_id")
     of "search":
       if searchKeyword.len == 0:
-        errorMsg = "search 命令需要一个搜索关键词"
+        errorMsg = t("error.search_requires_keyword")
     of "list":
       if countErr.len > 0:
         errorMsg = countErr
     of "":
-      errorMsg = "未知命令"
+      errorMsg = t("error.unknown_command")
     else:
       discard
 
@@ -69,26 +69,26 @@ proc parseCommandLine*(): CliResult =
                    listCount: listCount, help: help, errorMsg: errorMsg)
 
 proc printUsage*(prog: string) =
-  echo "用法: ", prog, " <命令> [参数]"
+  echo t("usage.title") % [prog]
   echo ""
-  echo "命令:"
-  echo "  download <专辑ID> [专辑ID...]  下载指定专辑，可一次下载多张（按顺序）"
-  echo "  list [数量]        列出专辑，默认 10 张"
-  echo "  search <关键词>    模糊搜索专辑（仅匹配专辑名）"
-  echo "  -h, --help         显示帮助"
+  echo t("usage.commands")
+  echo t("usage.download_line")
+  echo t("usage.list_line")
+  echo t("usage.search_line")
+  echo t("usage.help_line")
   echo ""
-  echo "示例: ", prog, " download 9375"
-  echo "      ", prog, " list"
-  echo "      ", prog, " list 15"
-  echo "      ", prog, " search 音律"
+  echo t("usage.examples")
+  echo t("usage.example_download") % [prog]
+  echo t("usage.example_list") % [prog]
+  echo t("usage.example_list15") % [prog]
+  echo t("usage.example_search") % [prog]
 
 proc printCliError*(opts: CliResult, prog: string) =
   if opts.errorMsg.len == 0:
     return
+  echo t("error.prefix"), opts.errorMsg
   case opts.command
   of "download":
-    echo "错误: ", opts.errorMsg
-    echo "用法: ", prog, " download <专辑ID> [专辑ID...]"
+    echo t("usage.download_inline") % [prog]
   else:
-    echo "错误: ", opts.errorMsg
     printUsage(prog)

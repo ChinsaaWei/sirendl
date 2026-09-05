@@ -1,0 +1,86 @@
+{
+  "error": {
+    "http_failed": "HTTP请求失败: ",
+    "download_failed": "下载失败: ",
+    "fetch_list_failed": "获取专辑列表失败: ",
+    "parse_list_failed": "解析专辑列表数据失败: ",
+    "api_error": "API返回错误: ",
+    "fetch_album_failed": "获取专辑详情失败: ",
+    "parse_album_failed": "解析专辑数据失败: ",
+    "search_failed": "搜索失败: ",
+    "song_http_failed": "获取失败 (HTTP $1)",
+    "song_parse_failed": "解析数据失败",
+    "song_no_link": "无下载链接",
+    "unknown_command": "未知命令",
+    "list_count_invalid": "list 命令需要一个有效的数量",
+    "download_requires_id": "download 命令需要一个或多个专辑ID",
+    "search_requires_keyword": "search 命令需要一个搜索关键词",
+    "prefix": "错误: ",
+    "fetch_album_run": "获取专辑 $1 失败: $2",
+    "no_albums": "\n没有可处理的专辑",
+    "process_failed": "\n处理失败，请检查错误信息"
+  },
+  "usage": {
+    "title": "用法: $1 <命令> [参数]",
+    "commands": "命令:",
+    "download_line": "  download <专辑ID> [专辑ID...]  下载指定专辑，可一次下载多张（按顺序）",
+    "list_line": "  list [数量]        列出专辑，默认 10 张",
+    "search_line": "  search <关键词>    模糊搜索专辑（仅匹配专辑名）",
+    "help_line": "  -h, --help         显示帮助",
+    "examples": "示例:",
+    "example_download": "      $1 download 9375",
+    "example_list": "      $1 list",
+    "example_list15": "      $1 list 15",
+    "example_search": "      $1 search 音律",
+    "download_inline": "用法: $1 download <专辑ID> [专辑ID...]"
+  },
+  "table": {
+    "col_no": "序号",
+    "col_id": "ID",
+    "col_album": "专辑名称",
+    "col_artist": "艺术家",
+    "col_track": "歌曲名称",
+    "col_format": "文件格式",
+    "col_wav_size": "WAV大小"
+  },
+  "list": {
+    "summary": "最新专辑列表（共 $1 张，显示前 $2 张）:"
+  },
+  "search": {
+    "none": "未找到匹配 \"$1\" 的专辑",
+    "summary": "搜索 \"$1\" 找到 $2 张专辑:"
+  },
+  "album": {
+    "summary": "\n专辑 [$1] 歌曲列表（共 $2 首）:",
+    "no_downloadable": "[$1] 没有可下载的歌曲"
+  },
+  "misc": {
+    "unknown_album": "未知专辑",
+    "unknown_track": "未知歌曲"
+  },
+  "status": {
+    "fetch_tracks": "正在获取歌曲信息...",
+    "creating_folder": "创建专辑文件夹: ",
+    "cover_downloaded": "封面下载成功: ",
+    "cover_failed": "封面下载失败",
+    "skipping": "跳过 $1: $2",
+    "track_downloaded": "下载成功到wav文件夹: $1",
+    "track_failed": "下载失败: $1",
+    "converting": "开始转换WAV文件到FLAC格式...",
+    "converted": "转换成功: $1 -> $2",
+    "convert_failed": "转换失败: $1 (返回码: $2)",
+    "convert_output": "错误信息: ",
+    "conversion_done": "WAV到FLAC转换完成！",
+    "cancelled": "已取消下载",
+    "cancelled_nl": "\n已取消下载",
+    "album_done": "\n专辑处理完成！"
+  },
+  "progress": {
+    "fetch_album": "\n=== [$1/$2] 获取专辑ID: $3 ===",
+    "summary_overview": "\n共获取到 $1 张专辑，$2 首可下载歌曲：",
+    "processing_album": "\n=== [$1/$2] 处理专辑: $3 ==="
+  },
+  "prompt": {
+    "confirm": "是否开始按顺序下载以上 $1 张专辑共 $2 首歌曲? [Y/n]: "
+  }
+}

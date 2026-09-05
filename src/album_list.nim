@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import algorithm, httpclient, json, strutils, unicode
-import types, utils
+import types, utils, i18n
 
 const BASE_API_URL = "https://monster-siren.hypergryph.com/api"
 
@@ -27,16 +27,16 @@ proc getAlbumSummaries*(): seq[AlbumSummary] =
 
   let resp = client.get(BASE_API_URL & "/albums")
   if resp.code != Http200:
-    raise newException(IOError, "获取专辑列表失败: " & resp.status)
+    raise newException(IOError, t("error.fetch_list_failed") & resp.status)
 
   var albumsResp: AlbumsResponse
   try:
     albumsResp = resp.body.parseJson().to(AlbumsResponse)
   except:
-    raise newException(IOError, "解析专辑列表数据失败: " & getCurrentExceptionMsg())
+    raise newException(IOError, t("error.parse_list_failed") & getCurrentExceptionMsg())
 
   if albumsResp.code != 0:
-    raise newException(IOError, "API返回错误: " & albumsResp.msg)
+    raise newException(IOError, t("error.api_error") & albumsResp.msg)
 
   return albumsResp.data
 
@@ -76,26 +76,26 @@ proc searchAlbumSummaries*(summaries: seq[AlbumSummary], keyword: string): seq[A
 
 proc printSearchResults*(results: seq[AlbumSummary], keyword: string) =
   if results.len == 0:
-    echo "未找到匹配 \"", keyword, "\" 的专辑"
+    echo t("search.none") % [keyword]
     return
-  var headers = @["序号", "ID", "专辑名称", "艺术家"]
+  var headers = @[t("table.col_no"), t("table.col_id"), t("table.col_album"), t("table.col_artist")]
   var rows: seq[seq[string]]
   for i in 0 ..< results.len:
     let s = results[i]
     let artist = if s.artistes.len > 0: s.artistes.join(", ") else: "-"
     rows.add(@[$(i + 1), s.cid, s.name, artist])
-  echo "搜索 \"", keyword, "\" 找到 ", results.len, " 张专辑:"
+  echo t("search.summary") % [keyword, $(results.len)]
   printTable(headers, rows)
 
 proc printAlbumTable*(summaries: seq[AlbumSummary], maxCount: int) =
   let count = min(summaries.len, maxCount)
 
-  var headers = @["序号", "ID", "专辑名称", "艺术家"]
+  var headers = @[t("table.col_no"), t("table.col_id"), t("table.col_album"), t("table.col_artist")]
   var rows: seq[seq[string]]
   for i in 0 ..< count:
     let s = summaries[i]
     let artist = if s.artistes.len > 0: s.artistes.join(", ") else: "-"
     rows.add(@[$(i + 1), s.cid, s.name, artist])
 
-  echo "最新专辑列表（共 ", summaries.len, " 张，显示前 ", count, " 张）:"
+  echo t("list.summary") % [$(summaries.len), $(count)]
   printTable(headers, rows)
